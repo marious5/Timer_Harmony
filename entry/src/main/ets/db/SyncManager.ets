@@ -1,7 +1,10 @@
 import { connection } from '@kit.NetworkKit';
 import httpUtil from '../common/HttpUtil';
+import badgeService from '../common/BadgeService';
+import dynamicIconService from '../common/DynamicIconService';
 import scheduleRepository, { LocalSchedule } from './ScheduleRepository';
 import appStatusStore from './AppStatusStore';
+import distributedSyncManager from './DistributedSyncManager';
 import { Schedule, ScheduleListResponse, ScheduleCreateResponse,
   ScheduleSimpleResponse } from '../common/ScheduleModel';
 
@@ -19,6 +22,7 @@ import { Schedule, ScheduleListResponse, ScheduleCreateResponse,
 class SyncManager {
   private isSyncing: boolean = false;
   private netAvailable: boolean = false;
+  private pushedThisCycle: boolean = false;
 
   // ==================== Network Monitor ====================
 
@@ -65,6 +69,7 @@ class SyncManager {
     }
 
     this.isSyncing = true;
+    this.pushedThisCycle = false;
     console.info('SYNC_DEBUG: ========== Sync started ==========');
 
     let success: boolean = true;
@@ -83,17 +88,45 @@ class SyncManager {
 
     this.isSyncing = false;
     await this.refreshAppStatus();
-    console.info('SYNC_DEBUG: ========== Sync finished (success=' + success + ') ==========');
+
+    // 本轮有本端修改推送成功 → 通过分布式软总线广播，
+    // 其它同账号在线设备 DistributedSyncManager 监听到后立即触发 sync()
+    if (this.pushedThisCycle && distributedSyncManager.isReady()) {
+      distributedSyncManager.broadcastChange();
+    }
+
+    console.info('SYNC_DEBUG: ========== Sync finished (success=' + success +
+      ', pushed=' + this.pushedThisCycle + ') ==========');
     return success;
   }
 
-  /** Refresh AppStatusStore counts from the database. */
+  /**
+   * Refresh AppStatusStore counts from the database.
+   *
+   * 双通道桌面视觉反馈：
+   *   1. 角标 badgeService.setBadge(count)
+   *      —— 精确数字，1..99 显示具体值，>=100 自动 "99+"。
+   *   2. 动态应用图标 dynamicIconService.updateForPendingCount(count)
+   *      —— 按阈值切换四档图标资源：
+   *         0      → app_icon_default
+   *         1..3   → app_icon_level_1
+   *         4..7   → app_icon_level_2
+   *         >=8    → app_icon_level_3
+   *
+   * count 语义：业务维度的"待完成日程数"（未归档 + 未完成），
+   * 与 UI Stats Card "待完成" 保持一致。
+   */
   async refreshAppStatus(): Promise<void> {
     try {
       const pending: number = await scheduleRepository.getPendingCount();
       const failed: number = await scheduleRepository.getFailedCount();
       appStatusStore.setPendingCount(pending);
       appStatusStore.setFailedCount(failed);
+
+      const business: LocalSchedule[] = await scheduleRepository.getPending();
+      const businessCount: number = business.length;
+      badgeService.setBadge(businessCount);
+      dynamicIconService.updateForPendingCount(businessCount);
     } catch (_e) {
       // DB not ready yet — ignore
     }
@@ -133,6 +166,7 @@ class SyncManager {
           console.info('SYNC_DEBUG: Created local_id=' + creates[i].local_id +
             ' → server id=' + res.ids[i]);
         }
+        if (count > 0) this.pushedThisCycle = true;
       } else {
         // Server rejected — mark all as failed
         for (let i = 0; i < creates.length; i++) {
@@ -171,6 +205,7 @@ class SyncManager {
         if (res.success) {
           await scheduleRepository.markSynced(local.local_id);
           await scheduleRepository.clearSyncFailed(local.local_id);
+          this.pushedThisCycle = true;
           console.info('SYNC_DEBUG: Updated server id=' + local.id + ' OK');
         } else {
           await scheduleRepository.markSyncFailed(local.local_id);
@@ -206,6 +241,7 @@ class SyncManager {
         const res: ScheduleSimpleResponse = await httpUtil.deleteSchedule(local.id);
         if (res.success) {
           await scheduleRepository.physicalDelete(local.local_id);
+          this.pushedThisCycle = true;
           console.info('SYNC_DEBUG: Deleted server id=' + local.id + ' OK');
         } else {
           await scheduleRepository.markSyncFailed(local.local_id);

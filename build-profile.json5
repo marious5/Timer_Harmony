@@ -5,13 +5,13 @@
         "name": "default",
         "type": "HarmonyOS",
         "material": {
-          "certpath": "C:\\Users\\dings\\.ohos\\config\\default_MyApplication_FJn_V3vEBr03qwacJ68VvyVfapskrw0g5sLvQBw2uDo=.cer",
-          "keyAlias": "debugKey",
-          "keyPassword": "00000019DD5AF2B1A2C1598357E99E3F55E4251069445CA7B6F9B684524572F7927700F2543F18D2D3",
-          "profile": "C:\\Users\\dings\\.ohos\\config\\default_MyApplication_FJn_V3vEBr03qwacJ68VvyVfapskrw0g5sLvQBw2uDo=.p7b",
+          "storeFile": "D:/time/ArkTS_study2/key.p12",
+          "storePassword": "000000183E4A9C681552BA3FD5C88DA74433C985DB21799AEA2134973069DA11207000C9A17571F3",
+          "keyAlias": "timer_key",
+          "keyPassword": "000000181EE185D983839E9E32CAC8F3474375DB1C4D446F185057ECF91A35CD256E20D4FF61E4DC",
           "signAlg": "SHA256withECDSA",
-          "storeFile": "C:\\Users\\dings\\.ohos\\config\\default_MyApplication_FJn_V3vEBr03qwacJ68VvyVfapskrw0g5sLvQBw2uDo=.p12",
-          "storePassword": "00000019F57B4E0429746685DB3781804658CB58BA8527AB5BC0F43585F36BF3B1762A1B70F46F7D5A"
+          "profile": "D:/edgedownload/Timer_ProfileRelease.p7b",
+          "certpath": "D:/edgedownload/Timer_Release.cer"
         }
       }
     ],

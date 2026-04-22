@@ -20,6 +20,7 @@ struct ScheduleListPage {
   @State isLoading: boolean = false;
   @State filterType: string = 'pending';
   @State pageTitle: string = '待完成日程';
+  @StorageProp('app_breakpoint') currentBp: string = 'sm';
 
   aboutToAppear(): void {
     const params = router.getParams() as Record<string, string>;
@@ -186,120 +187,132 @@ struct ScheduleListPage {
               .width('100%')
               .margin({ top: 12, bottom: 8 })
 
-              // Cards under this date
-              ForEach(group.items, (item: LocalSchedule) => {
-                Column() {
-                  Row() {
+              // Cards under this date —— 响应式栅格
+              //   xs(手表): 1 列   sm(手机): 1 列   md(平板竖屏): 2 列   lg(平板横屏/2in1): 3 列   xl(大屏): 4 列
+              GridRow({
+                columns: { xs: 1, sm: 1, md: 2, lg: 3, xl: 4 },
+                gutter: { x: 10, y: 10 },
+                breakpoints: {
+                  value: ['320vp', '600vp', '840vp', '1440vp'],
+                  reference: BreakpointsReference.WindowSize
+                }
+              }) {
+                ForEach(group.items, (item: LocalSchedule) => {
+                  GridCol({ span: 1 }) {
                     Column() {
-                      Text(this.getTypeIcon(item.type))
-                        .fontSize(20)
-                    }
-                    .width(40)
-                    .height(40)
-                    .borderRadius(20)
-                    .backgroundColor(this.getTypeBg(item.type))
-                    .justifyContent(FlexAlign.Center)
-                    .alignItems(HorizontalAlign.Center)
-                    .margin({ right: 12 })
-
-                    Column() {
-                      Text(item.content.title)
-                        .fontSize(16)
-                        .fontWeight(FontWeight.Medium)
-                        .fontColor('#1d1d1f')
-                        .maxLines(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
                       Row() {
-                        if (item.content.end_time && item.content.end_time.length > 0) {
-                          Text('⏰ ' + item.content.end_time.join(' '))
-                            .fontSize(12)
-                            .fontColor('#FF9500')
-                            .margin({ right: 10 })
+                        Column() {
+                          Text(this.getTypeIcon(item.type))
+                            .fontSize(20)
                         }
-                        if (item.content.location) {
-                          Text('📍 ' + item.content.location)
-                            .fontSize(12)
-                            .fontColor('#86868b')
+                        .width(40)
+                        .height(40)
+                        .borderRadius(20)
+                        .backgroundColor(this.getTypeBg(item.type))
+                        .justifyContent(FlexAlign.Center)
+                        .alignItems(HorizontalAlign.Center)
+                        .margin({ right: 12 })
+
+                        Column() {
+                          Text(item.content.title)
+                            .fontSize(16)
+                            .fontWeight(FontWeight.Medium)
+                            .fontColor('#1d1d1f')
+                            .maxLines(1)
+                            .textOverflow({ overflow: TextOverflow.Ellipsis })
+                          Row() {
+                            if (item.content.end_time && item.content.end_time.length > 0) {
+                              Text('⏰ ' + item.content.end_time.join(' '))
+                                .fontSize(12)
+                                .fontColor('#FF9500')
+                                .margin({ right: 10 })
+                            }
+                            if (item.content.location) {
+                              Text('📍 ' + item.content.location)
+                                .fontSize(12)
+                                .fontColor('#86868b')
+                            }
+                          }
+                          .margin({ top: 4 })
+                        }
+                        .layoutWeight(1)
+                        .alignItems(HorizontalAlign.Start)
+
+                        if (this.isArchived(item)) {
+                          Text('✅')
+                            .fontSize(18)
+                        } else if (item.sync_failed) {
+                          Text('⚠️')
+                            .fontSize(16)
+                        } else if (item.sync_status !== 0) {
+                          Text('☁️')
+                            .fontSize(14)
+                            .opacity(0.6)
+                        } else {
+                          Text('›')
+                            .fontSize(20)
+                            .fontColor('#c7c7cc')
                         }
                       }
-                      .margin({ top: 4 })
-                    }
-                    .layoutWeight(1)
-                    .alignItems(HorizontalAlign.Start)
+                      .width('100%')
 
-                    if (this.isArchived(item)) {
-                      Text('✅')
-                        .fontSize(18)
-                    } else if (item.sync_failed) {
-                      Text('⚠️')
-                        .fontSize(16)
-                    } else if (item.sync_status !== 0) {
-                      Text('☁️')
-                        .fontSize(14)
-                        .opacity(0.6)
-                    } else {
-                      Text('›')
-                        .fontSize(20)
-                        .fontColor('#c7c7cc')
-                    }
-                  }
-                  .width('100%')
-
-                  if (!this.isArchived(item) && item.finished !== true) {
-                    Row() {
-                      if (item.sync_failed) {
-                        Text('⚠️ 同步失败')
-                          .fontSize(12)
-                          .fontColor('#FF3B30')
-                      } else if (item.sync_status !== 0) {
-                        Text('☁️ 待同步')
-                          .fontSize(12)
-                          .fontColor('#FF9500')
+                      if (!this.isArchived(item) && item.finished !== true) {
+                        Row() {
+                          if (item.sync_failed) {
+                            Text('⚠️ 同步失败')
+                              .fontSize(12)
+                              .fontColor('#FF3B30')
+                          } else if (item.sync_status !== 0) {
+                            Text('☁️ 待同步')
+                              .fontSize(12)
+                              .fontColor('#FF9500')
+                          }
+                          Blank()
+                          if (item.sync_failed) {
+                            Button('重试同步')
+                              .type(ButtonType.Capsule)
+                              .height(30)
+                              .fontSize(13)
+                              .fontWeight(FontWeight.Medium)
+                              .backgroundColor('#FF3B30')
+                              .fontColor('#ffffff')
+                              .margin({ right: 8 })
+                              .onClick(() => {
+                                promptAction.showToast({ message: '正在重试同步...' });
+                                syncManager.sync().then(() => { this.loadData(); });
+                              })
+                          }
+                          Button('已完成')
+                            .type(ButtonType.Capsule)
+                            .height(30)
+                            .fontSize(13)
+                            .fontWeight(FontWeight.Medium)
+                            .backgroundColor('#34C759')
+                            .fontColor('#ffffff')
+                            .onClick((event: ClickEvent) => {
+                              this.handleArchive(item.local_id);
+                            })
+                        }
+                        .width('100%')
+                        .margin({ top: 8 })
                       }
-                      Blank()
-                      if (item.sync_failed) {
-                        Button('重试同步')
-                          .type(ButtonType.Capsule)
-                          .height(30)
-                          .fontSize(13)
-                          .fontWeight(FontWeight.Medium)
-                          .backgroundColor('#FF3B30')
-                          .fontColor('#ffffff')
-                          .margin({ right: 8 })
-                          .onClick(() => {
-                            promptAction.showToast({ message: '正在重试同步...' });
-                            syncManager.sync().then(() => { this.loadData(); });
-                          })
-                      }
-                      Button('已完成')
-                        .type(ButtonType.Capsule)
-                        .height(30)
-                        .fontSize(13)
-                        .fontWeight(FontWeight.Medium)
-                        .backgroundColor('#34C759')
-                        .fontColor('#ffffff')
-                        .onClick((event: ClickEvent) => {
-                          this.handleArchive(item.local_id);
-                        })
                     }
                     .width('100%')
-                    .margin({ top: 8 })
+                    .padding(14)
+                    .backgroundColor(this.isArchived(item) ? '#f0f0f0' : '#f5f5f7')
+                    .borderRadius(12)
+                    .opacity(this.isArchived(item) ? 0.7 : 1.0)
+                    .onClick(() => {
+                      const params: DetailParams = { local_id: item.local_id };
+                      router.pushUrl({
+                        url: 'pages/ScheduleDetailPage',
+                        params: params
+                      });
+                    })
                   }
-                }
-                .width('100%')
-                .padding(14)
-                .backgroundColor(this.isArchived(item) ? '#f0f0f0' : '#f5f5f7')
-                .borderRadius(12)
-                .opacity(this.isArchived(item) ? 0.7 : 1.0)
-                .margin({ bottom: 8 })
-                .onClick(() => {
-                  const params: DetailParams = { local_id: item.local_id };
-                  router.pushUrl({
-                    url: 'pages/ScheduleDetailPage',
-                    params: params
-                  });
-                })
-              }, (item: LocalSchedule) => item.local_id.toString())
+                }, (item: LocalSchedule) => item.local_id.toString())
+              }
+              .width('100%')
             }, (group: DateGroup) => group.date)
           }
           .width('100%')
@@ -310,6 +323,15 @@ struct ScheduleListPage {
     }
     .width('100%')
     .height('100%')
-    .padding({ left: 20, right: 20, top: 54 })
+    .padding({ left: this.sidePadding(), right: this.sidePadding(), top: 54 })
+  }
+
+  /** 响应式两侧留白，同 HomePage 口径 */
+  private sidePadding(): number {
+    if (this.currentBp === 'xs') return 10;
+    if (this.currentBp === 'sm') return 20;
+    if (this.currentBp === 'md') return 48;
+    if (this.currentBp === 'lg') return 80;
+    return 120;
   }
 }

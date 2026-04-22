@@ -1,6 +1,7 @@
 import { router } from '@kit.ArkUI';
 import { promptAction } from '@kit.ArkUI';
 import preferencesUtil from '../common/PreferencesUtil';
+import dynamicIconService from '../common/DynamicIconService';
 import scheduleRepository, { LocalSchedule } from '../db/ScheduleRepository';
 import syncManager from '../db/SyncManager';
 
@@ -23,6 +24,8 @@ struct HomePage {
   @StorageProp('app_isOffline') appIsOffline: boolean = false;
   @StorageProp('app_pendingSyncCount') appPendingCount: number = 0;
   @StorageProp('app_failedSyncCount') appFailedCount: number = 0;
+  @StorageProp('app_breakpoint') currentBp: string = 'sm';
+  @StorageProp('app_icon_level') currentIconLevel: string = 'default';
 
   aboutToAppear(): void {
     preferencesUtil.getUsername().then((name: string) => {
@@ -99,6 +102,14 @@ struct HomePage {
         .alignItems(HorizontalAlign.Start)
         .layoutWeight(1)
 
+        // 动态应用图标预览 —— @StorageProp 订阅 app_icon_level，
+        // 随未完成日程数量（0 / 1-3 / 4-7 / ≥8）自动切换四档 PNG
+        Image(dynamicIconService.getResourceForLevel(this.currentIconLevel))
+          .width(40)
+          .height(40)
+          .borderRadius(10)
+          .margin({ right: 12 })
+
         Text(this.isRefreshing ? '⏳' : '🔄')
           .fontSize(22)
           .onClick(() => { this.handleSync(); })
@@ -132,47 +143,57 @@ struct HomePage {
         .margin({ bottom: 12 })
       }
 
-      // Stats Card
-      Row() {
-        Column() {
-          Text('待完成')
-            .fontSize(13)
-            .fontColor('#86868b')
-          Text(this.pendingCount.toString())
-            .fontSize(34)
-            .fontWeight(FontWeight.Bold)
-            .fontColor('#007AFF')
+      // Stats Card — 响应式栅格（遵循华为应用设计规范）
+      //   xs(手表): 2 卡单列堆叠   sm(手机): 并排   md/lg(平板/2in1): 并排带更大间距
+      GridRow({
+        columns: 2,
+        gutter: { x: 12, y: 12 },
+        breakpoints: {
+          value: ['320vp', '600vp', '840vp', '1440vp'],
+          reference: BreakpointsReference.WindowSize
         }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Center)
-        .padding({ top: 16, bottom: 16 })
-        .backgroundColor('#f5f5f7')
-        .borderRadius(14)
-        .onClick(() => {
-          const p: ListFilterParams = { filter: 'pending' };
-          router.pushUrl({ url: 'pages/ScheduleListPage', params: p });
-        })
-
-        Column().width(12)
-
-        Column() {
-          Text('总日程')
-            .fontSize(13)
-            .fontColor('#86868b')
-          Text(this.totalCount.toString())
-            .fontSize(34)
-            .fontWeight(FontWeight.Bold)
-            .fontColor('#FF9500')
+      }) {
+        GridCol({ span: { xs: 2, sm: 1, md: 1, lg: 1, xl: 1 } }) {
+          Column() {
+            Text('待完成')
+              .fontSize(13)
+              .fontColor('#86868b')
+            Text(this.pendingCount.toString())
+              .fontSize(34)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#007AFF')
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Center)
+          .padding({ top: 16, bottom: 16 })
+          .backgroundColor('#f5f5f7')
+          .borderRadius(14)
+          .onClick(() => {
+            const p: ListFilterParams = { filter: 'pending' };
+            router.pushUrl({ url: 'pages/ScheduleListPage', params: p });
+          })
         }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Center)
-        .padding({ top: 16, bottom: 16 })
-        .backgroundColor('#f5f5f7')
-        .borderRadius(14)
-        .onClick(() => {
-          const p: ListFilterParams = { filter: 'all' };
-          router.pushUrl({ url: 'pages/ScheduleListPage', params: p });
-        })
+
+        GridCol({ span: { xs: 2, sm: 1, md: 1, lg: 1, xl: 1 } }) {
+          Column() {
+            Text('总日程')
+              .fontSize(13)
+              .fontColor('#86868b')
+            Text(this.totalCount.toString())
+              .fontSize(34)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#FF9500')
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Center)
+          .padding({ top: 16, bottom: 16 })
+          .backgroundColor('#f5f5f7')
+          .borderRadius(14)
+          .onClick(() => {
+            const p: ListFilterParams = { filter: 'all' };
+            router.pushUrl({ url: 'pages/ScheduleListPage', params: p });
+          })
+        }
       }
       .width('100%')
       .margin({ bottom: 16 })
@@ -323,7 +344,20 @@ struct HomePage {
     }
     .width('100%')
     .height('100%')
-    .padding({ left: 20, right: 20, top: 54 })
+    .padding({ left: this.sidePadding(), right: this.sidePadding(), top: 54 })
+  }
+
+  /**
+   * 华为设计规范推荐的响应式两侧留白：
+   *   xs 10vp / sm 20vp / md 48vp / lg 80vp / xl 120vp
+   * 大屏设备上通过加大 padding 实现内容居中收束（避免超宽阅读疲劳）。
+   */
+  private sidePadding(): number {
+    if (this.currentBp === 'xs') return 10;
+    if (this.currentBp === 'sm') return 20;
+    if (this.currentBp === 'md') return 48;
+    if (this.currentBp === 'lg') return 80;
+    return 120;
   }
 
   async handleArchive(localId: number): Promise<void> {
