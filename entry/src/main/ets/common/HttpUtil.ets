@@ -1,11 +1,11 @@
-import { http } from '@kit.NetworkKit';
+﻿import { http } from '@kit.NetworkKit';
 import preferencesUtil from './PreferencesUtil';
 import { Schedule, ScheduleContent, ScheduleListResponse, ScheduleDetailResponse,
   ScheduleCreateResponse, ScheduleSimpleResponse, QuantityResponse } from './ScheduleModel';
 
 const BASE_URL = 'http://192.168.43.231:5000';
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
-const DEEPSEEK_API_KEY = 'sk-75c8d51cfa0d404dac8fd5414bd3bf31';
+const DEEPSEEK_API_KEY = '';
 
 interface AuthRequest {
   username: string;
@@ -282,7 +282,11 @@ class HttpUtil {
   // ==================== DeepSeek AI ====================
 
   async parseWithAI(userInput: string): Promise<string> {
-    const httpRequest = http.createHttp();
+    
+    if (!DEEPSEEK_API_KEY) {
+      throw new Error('DeepSeek API key is not configured. Route AI parsing through a backend service or inject a non-public runtime configuration.');
+    }
+const httpRequest = http.createHttp();
     const systemPrompt: string = `你是一个日程解析助手。用户会输入一段自然语言描述，你需要从中提取日程信息并返回严格的JSON格式（不要包含任何其他文字）：
 {
   "title": "任务标题",
@@ -324,3 +328,4 @@ class HttpUtil {
 
 const httpUtil = new HttpUtil();
 export default httpUtil;
+

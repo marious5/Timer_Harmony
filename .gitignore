@@ -10,3 +10,4 @@
 /.clang-tidy
 **/.test
 /.appanalyzer
+backends/config/deepseek_api_key.txt
