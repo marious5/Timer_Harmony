@@ -1,5 +1,7 @@
 # Timer_Harmony
 
+English | [简体中文](README.zh-CN.md)
+
 An intelligent schedule management app for HarmonyOS, built with ArkTS, ArkUI, and the Stage model.
 
 Timer_Harmony focuses on turning natural-language intent into structured schedules, then managing those schedules across local storage, backend APIs, and HarmonyOS device experiences.
@@ -21,27 +23,27 @@ Timer_Harmony focuses on turning natural-language intent into structured schedul
 
 ```text
 entry/src/main/ets/
-├── common/
-│   ├── HttpUtil.ets
-│   ├── PreferencesUtil.ets
-│   ├── ScheduleModel.ets
-│   ├── BreakpointUtil.ets
-│   ├── BadgeService.ets
-│   └── DynamicIconService.ets
-├── db/
-│   ├── DbHelper.ets
-│   ├── ScheduleRepository.ets
-│   ├── SyncManager.ets
-│   ├── DistributedSyncManager.ets
-│   └── AppStatusStore.ets
-├── pages/
-│   ├── LoginPage.ets
-│   ├── MainPage.ets
-│   ├── ScheduleListPage.ets
-│   ├── CreateSchedulePage.ets
-│   └── ScheduleDetailPage.ets
-└── entryability/
-    └── EntryAbility.ets
+|-- common/
+|   |-- HttpUtil.ets
+|   |-- PreferencesUtil.ets
+|   |-- ScheduleModel.ets
+|   |-- BreakpointUtil.ets
+|   |-- BadgeService.ets
+|   `-- DynamicIconService.ets
+|-- db/
+|   |-- DbHelper.ets
+|   |-- ScheduleRepository.ets
+|   |-- SyncManager.ets
+|   |-- DistributedSyncManager.ets
+|   `-- AppStatusStore.ets
+|-- pages/
+|   |-- LoginPage.ets
+|   |-- MainPage.ets
+|   |-- ScheduleListPage.ets
+|   |-- CreateSchedulePage.ets
+|   `-- ScheduleDetailPage.ets
+`-- entryability/
+    `-- EntryAbility.ets
 ```
 
 ## Tech Stack
