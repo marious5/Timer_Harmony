@@ -46,6 +46,11 @@ entry/src/main/ets/
     `-- EntryAbility.ets
 ```
 
+## Documentation
+
+- [Development Guide](docs/DEVELOPMENT.md)
+- [中文开发说明](docs/DEVELOPMENT.zh-CN.md)
+
 ## Tech Stack
 
 - HarmonyOS
@@ -108,4 +113,3 @@ Do not commit production API keys, LLM keys, session secrets, or private backend
 ## Status
 
 This project is an active HarmonyOS client implementation for intelligent schedule management. It is suitable for demonstrating ArkTS client architecture, API integration, local persistence, sync handling, and AI-assisted app workflows.
-

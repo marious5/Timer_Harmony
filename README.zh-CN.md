@@ -46,6 +46,11 @@ entry/src/main/ets/
     `-- EntryAbility.ets
 ```
 
+## 文档
+
+- [Development Guide](docs/DEVELOPMENT.md)
+- [中文开发说明](docs/DEVELOPMENT.zh-CN.md)
+
 ## 技术栈
 
 - HarmonyOS
@@ -108,4 +113,3 @@ interface ScheduleContent {
 ## 项目状态
 
 这是一个持续开发中的 HarmonyOS 智能日程客户端，适合展示 ArkTS 客户端架构、后端 API 对接、本地持久化、同步处理和 AI 辅助工作流能力。
-
